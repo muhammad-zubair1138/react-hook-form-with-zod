@@ -1,47 +1,52 @@
 "use client";
-import { Box, Button, Grid, TextField, Typography } from "@mui/material";
-import { useState } from "react";
 
-export function EmailForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [errors, setError] = useState<{ email: string; password: string }>({
-    email: "",
-    password: "",
+import { SubmitHandler, useForm } from "react-hook-form";
+import { Box, Button, Grid, TextField, Typography } from "@mui/material";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+const schema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+type FormFields = z.infer<typeof schema>;
+
+export function EmailReactHookFormWithZodForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<FormFields>({
+    defaultValues: {
+      email: "test@gmail.com",
+      password: "12345678",
+    },
+    resolver: zodResolver(schema),
   });
 
-  console.log(email, password);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    setError({ email: "", password: "" });
-
-    if (!email.includes("@")) {
-      setError({ ...errors, email: "Email must include @" });
-      return;
+  const onSubmit: SubmitHandler<FormFields> = async (data) => {
+    try {
+      await new Promise((resolve, reject) => setTimeout(resolve, 1000));
+      throw new Error();
+      console.log(data);
+    } catch (error) {
+      setError("root", { message: "This email has already been" });
     }
-
-    if (password.length < 8) {
-      setError({ ...errors, password: "Password must be at least 8 charters" });
-      return;
-    }
-
-    console.log("Form Submitted", e);
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit(onSubmit)}>
       <Box sx={{ m: 5 }}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <TextField
+              {...register("email")}
               type="text"
-              value={email}
               placeholder="Email"
               variant="outlined"
               fullWidth
-              onChange={(e) => setEmail(e.target.value)}
             />
             {errors.email && (
               <Typography
@@ -50,18 +55,17 @@ export function EmailForm() {
                 display="block"
                 gutterBottom
               >
-                {errors.email}
+                {errors.email.message}
               </Typography>
             )}
           </Grid>
           <Grid item xs={12}>
             <TextField
-              type="text"
-              value={password}
+              {...register("password")}
+              type="password"
               placeholder="Password"
               variant="outlined"
               fullWidth
-              onChange={(e) => setPassword(e.target.value)}
             />
             {errors.password && (
               <Typography
@@ -70,14 +74,29 @@ export function EmailForm() {
                 display="block"
                 gutterBottom
               >
-                {errors.password}
+                {errors.password.message}
               </Typography>
             )}
           </Grid>
           <Grid item xs={6}>
-            <Button type="submit" variant="contained" sx={{ px: 3, py: 2 }}>
-              Submit
+            <Button
+              disabled={isSubmitting}
+              type="submit"
+              variant="contained"
+              sx={{ px: 3, py: 2, mb: 2 }}
+            >
+              {isSubmitting ? "Loading..." : "Submit"}
             </Button>
+            {errors.root && (
+              <Typography
+                color="red"
+                variant="caption"
+                display="block"
+                gutterBottom
+              >
+                {errors.root.message}
+              </Typography>
+            )}
           </Grid>
         </Grid>
       </Box>
